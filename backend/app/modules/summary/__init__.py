@@ -1,0 +1,1 @@
+"""Clinical summary domain module."""

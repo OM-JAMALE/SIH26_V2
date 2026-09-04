@@ -1,0 +1,1 @@
+"""ABDM integration boundary."""
