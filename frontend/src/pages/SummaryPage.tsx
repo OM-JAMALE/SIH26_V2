@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   ClipboardCheck, 
@@ -24,8 +25,12 @@ import {
 } from '../api/client';
 
 export const SummaryPage: React.FC = () => {
-  // Demo session ID or active session state
-  const [sessionId, setSessionId] = useState<string>('demo-session-uuid-101');
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const paramSessionId = searchParams.get('session_id');
+  const [sessionId, setSessionId] = useState<string>(
+    paramSessionId || localStorage.getItem('active_session_id') || ''
+  );
   const [editing, setEditing] = useState<boolean>(false);
   const [editedText, setEditedText] = useState<string>('');
   const [rejectModalOpen, setRejectModalOpen] = useState<boolean>(false);
@@ -35,11 +40,21 @@ export const SummaryPage: React.FC = () => {
 
   const queryClient = useQueryClient();
 
-  // Query summary
+  React.useEffect(() => {
+    if (paramSessionId && paramSessionId !== sessionId) {
+      setSessionId(paramSessionId);
+    } else if (!paramSessionId) {
+      const stored = localStorage.getItem('active_session_id');
+      if (stored && stored !== sessionId) setSessionId(stored);
+    }
+  }, [paramSessionId]);
+
+  // Query summary — only when we have a real session ID
   const { data: summary, isLoading, isError, refetch } = useQuery<SummaryData>({
     queryKey: ['clinicalSummary', sessionId],
     queryFn: () => getSummary(sessionId),
     retry: false,
+    enabled: !!sessionId,
   });
 
   // Mutations
@@ -53,7 +68,7 @@ export const SummaryPage: React.FC = () => {
   const editMutation = useMutation({
     mutationFn: (newText: string) => {
       const active = summary?.active_summary || {};
-      const updated = { ...active, generated_summary_text: newText };
+      const updated = { session_id: sessionId, ...active, generated_summary_text: newText };
       return editSummary(sessionId, updated);
     },
     onSuccess: (data) => {
@@ -82,6 +97,31 @@ export const SummaryPage: React.FC = () => {
   const isPhysicianEdited = !!summary?.physician_edited_summary;
   const isAccepted = summary?.workflow_status === 'ACCEPTED';
   const isRejected = summary?.workflow_status === 'REJECTED';
+
+  // Guard: no active session
+  if (!sessionId) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto">
+        <div className="glass-panel p-12 rounded-2xl text-center space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-white">No Active Session</h3>
+            <p className="text-sm text-slate-400 mt-1 max-w-md mx-auto">
+              Please start a pre-consultation session first before generating a clinical summary.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/identify')}
+            className="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-lg shadow-brand-500/20 transition-all"
+          >
+            Start a New Session
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -144,6 +184,20 @@ export const SummaryPage: React.FC = () => {
           <span>Prompt: <strong className="text-cyan-300 font-mono">{summary?.prompt_version || 'v1.0'}</strong></span>
         </div>
       </div>
+
+      {/* Error Alert */}
+      {(generateMutation.error || editMutation.error || acceptMutation.error || rejectMutation.error) && (
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <span className="font-semibold">Operation Alert: </span>
+            {(generateMutation.error as any)?.message ||
+             (editMutation.error as any)?.message ||
+             (acceptMutation.error as any)?.message ||
+             (rejectMutation.error as any)?.message}
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area */}
       {!summary && !isLoading && !generateMutation.isPending && (

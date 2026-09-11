@@ -1,0 +1,374 @@
+/* SummaryReview.css */
+
+.summary-review {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  min-height: 400px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-review.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a0aec0;
+  font-size: 1rem;
+}
+
+/* Review Header */
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.review-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a365d;
+  margin: 0;
+}
+
+.review-status {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.review-status.pending {
+  background: #fed7d7;
+  color: #c53030;
+}
+
+.review-status.approved {
+  background: #c6f6d5;
+  color: #22543d;
+}
+
+.review-status.rejected {
+  background: #feb2b2;
+  color: #742a2a;
+}
+
+/* Error Alert */
+.error-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  background-color: #fed7d7;
+  border: 1px solid #fc8181;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.error-alert .error-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.error-alert p {
+  margin: 0;
+  color: #c53030;
+  font-size: 0.95rem;
+}
+
+/* Action Buttons */
+.review-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: 2px solid #e2e8f0;
+  background: white;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.action-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-button .icon {
+  font-size: 1.1rem;
+}
+
+.action-button .label {
+  display: inline;
+}
+
+/* Specific button colors */
+.approve-button {
+  border-color: #48bb78;
+  color: #22543d;
+}
+
+.approve-button:hover:not(:disabled) {
+  background: #c6f6d5;
+  border-color: #2f855a;
+}
+
+.edit-button {
+  border-color: #4299e1;
+  color: #2c5282;
+}
+
+.edit-button:hover:not(:disabled) {
+  background: #bee3f8;
+  border-color: #2c5aa0;
+}
+
+.reject-button {
+  border-color: #f56565;
+  color: #742a2a;
+}
+
+.reject-button:hover:not(:disabled) {
+  background: #fed7d7;
+  border-color: #e53e3e;
+}
+
+/* Review Panel */
+.review-panel {
+  background: #f7fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  flex-grow: 1;
+}
+
+.review-panel.approve-panel {
+  border-left: 4px solid #48bb78;
+  background: #f0fff4;
+}
+
+.review-panel.reject-panel {
+  border-left: 4px solid #f56565;
+  background: #fff5f5;
+}
+
+.review-panel.edit-panel {
+  border-left: 4px solid #4299e1;
+  background: #ebf8ff;
+}
+
+/* Panel Header */
+.panel-header {
+  margin-bottom: 16px;
+}
+
+.panel-header h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0 0 4px 0;
+}
+
+.panel-hint {
+  font-size: 0.85rem;
+  color: #718096;
+  margin: 0;
+}
+
+.panel-hint.required {
+  color: #c53030;
+  font-weight: 500;
+}
+
+/* Form Groups */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group:last-of-type {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 6px;
+}
+
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: #2d3748;
+  resize: vertical;
+  transition: border-color 0.3s ease;
+}
+
+.form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-group textarea:disabled {
+  background: #edf2f7;
+  cursor: not-allowed;
+}
+
+.form-group .char-count {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: #718096;
+}
+
+/* Panel Actions */
+.panel-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.confirm-button,
+.cancel-button {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+}
+
+.confirm-button {
+  background: #667eea;
+  color: white;
+}
+
+.confirm-button:hover:not(:disabled) {
+  background: #5568d3;
+  transform: translateY(-2px);
+}
+
+.confirm-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.confirm-button.reject {
+  background: #f56565;
+}
+
+.confirm-button.reject:hover:not(:disabled) {
+  background: #e53e3e;
+}
+
+.cancel-button {
+  background: #e2e8f0;
+  color: #2d3748;
+}
+
+.cancel-button:hover:not(:disabled) {
+  background: #cbd5e0;
+}
+
+.cancel-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.confirm-button .spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Review Footer */
+.review-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.footer-note {
+  display: block;
+  color: #718096;
+  font-size: 0.8rem;
+  text-align: center;
+  margin: 0;
+}
+
+/* Animations */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .summary-review {
+    padding: 16px;
+  }
+
+  .review-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .review-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .action-button {
+    justify-content: flex-start;
+  }
+
+  .review-panel {
+    padding: 12px;
+  }
+
+  .panel-actions {
+    flex-direction: column;
+  }
+
+  .confirm-button,
+  .cancel-button {
+    width: 100%;
+  }
+}

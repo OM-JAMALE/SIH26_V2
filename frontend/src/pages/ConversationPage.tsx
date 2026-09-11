@@ -26,17 +26,18 @@ import {
   ConversationTurnData 
 } from '../api/client';
 
+// Must match exactly the backend ConversationSection enum values
 const INTERVIEW_SECTIONS = [
-  'IDENTIFICATION',
   'CHIEF_COMPLAINT',
   'HPI',
-  'PAST_MEDICAL_HISTORY',
-  'PAST_SURGICAL_HISTORY',
-  'MEDICATIONS',
-  'ALLERGIES',
+  'SOCRATES',
+  'PMH',
+  'PSH',
+  'DRUG_HISTORY',
+  'ALLERGY_HISTORY',
   'FAMILY_HISTORY',
   'PERSONAL_HISTORY',
-  'REVIEW_OF_SYSTEMS',
+  'ROS',
   'COMPLETED'
 ];
 

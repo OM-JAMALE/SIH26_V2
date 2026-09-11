@@ -20,10 +20,7 @@ export const PatientPage: React.FC = () => {
       navigate(`/converse?session_id=${session.session_id}`);
     } catch (err: any) {
       console.error('Failed to create session:', err);
-      // Fallback: use a demo session ID if API fails or backend is unreachable
-      const fallbackId = `session-${Date.now()}`;
-      localStorage.setItem('active_session_id', fallbackId);
-      navigate(`/converse?session_id=${fallbackId}`);
+      setError(err.message || 'Failed to connect to backend server. Please verify the backend API is running on port 8000.');
     } finally {
       setLoading(false);
     }

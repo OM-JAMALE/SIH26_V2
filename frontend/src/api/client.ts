@@ -1,20 +1,33 @@
 /// <reference types="vite/client" />
 import { HealthResponse } from '../types';
 
-const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000/api/v1';
+// Uses Vite proxy in dev (vite.config.ts server.proxy) and env var in production
+const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1';
 
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
-  const headers = {
-    'Content-Type': 'application/json',
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+  const headers: Record<string, string> = {
     'Accept': 'application/json',
     'X-Request-ID': crypto.randomUUID(),
-    ...(options.headers || {}),
+    ...(options.headers as Record<string, string> || {}),
   };
+  if (!isFormData && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   const res = await fetch(`${API_BASE}${url}`, { ...options, headers });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    const message = errorData.detail?.error || errorData.error?.message || `API request failed with status ${res.status}`;
+    let message = `API request failed with status ${res.status}`;
+    if (typeof errorData.detail === 'string') {
+      message = errorData.detail;
+    } else if (errorData.detail?.error) {
+      message = errorData.detail.error;
+    } else if (Array.isArray(errorData.detail) && errorData.detail.length > 0) {
+      message = errorData.detail[0]?.msg || JSON.stringify(errorData.detail);
+    } else if (errorData.error?.message) {
+      message = errorData.error.message;
+    }
     const error = new Error(message) as any;
     error.detail = errorData.detail || errorData;
     throw error;
@@ -161,5 +174,86 @@ export async function rejectSummary(sessionId: string, reason: string): Promise<
   return request<SummaryData>(`/sessions/${sessionId}/summary/reject`, {
     method: 'POST',
     body: JSON.stringify({ reason, physician_id: 'dr_physician_1' }),
+  });
+}
+
+// ==========================================
+// Module B: Medical Document Digitization
+// ==========================================
+
+export interface ExtractedEntityData {
+  id: string;
+  session_id: string;
+  document_id?: string;
+  entity_type: 'LAB_RESULT' | 'MEDICATION' | 'DIAGNOSIS' | 'VITAL' | 'SYMPTOM' | string;
+  entity_name: string;
+  value: string;
+  numeric_value?: number;
+  unit?: string;
+  reference_range?: string;
+  is_abnormal: boolean;
+  confidence_score: number;
+  metadata_json: Record<string, any>;
+  created_at: string;
+}
+
+export interface DocumentData {
+  id: string;
+  session_id: string;
+  filename: string;
+  mime_type: string;
+  file_size: number;
+  processing_status: 'PENDING' | 'EXTRACTED' | 'FAILED' | string;
+  raw_text?: string;
+  created_at: string;
+  extracted_entities: ExtractedEntityData[];
+}
+
+export interface DocumentListResponseData {
+  documents: DocumentData[];
+  total: number;
+}
+
+export interface EntityListResponseData {
+  entities: ExtractedEntityData[];
+  total: number;
+  abnormal_count: number;
+}
+
+export interface DocumentDeleteResponseData {
+  success: boolean;
+  message: string;
+  document_id: string;
+}
+
+export async function uploadDocument(sessionId: string, file: File): Promise<DocumentData> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return request<DocumentData>(`/sessions/${sessionId}/documents`, {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+export async function getSessionDocuments(sessionId: string): Promise<DocumentData[]> {
+  const res = await request<DocumentListResponseData>(`/sessions/${sessionId}/documents`);
+  return res.documents || [];
+}
+
+export async function getSessionEntities(
+  sessionId: string,
+  abnormalOnly: boolean = false
+): Promise<EntityListResponseData> {
+  const query = abnormalOnly ? '?abnormal_only=true' : '';
+  return request<EntityListResponseData>(`/sessions/${sessionId}/entities${query}`);
+}
+
+export async function deleteDocument(
+  sessionId: string,
+  documentId: string
+): Promise<DocumentDeleteResponseData> {
+  return request<DocumentDeleteResponseData>(`/sessions/${sessionId}/documents/${documentId}`, {
+    method: 'DELETE',
   });
 }

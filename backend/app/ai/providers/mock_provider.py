@@ -59,6 +59,130 @@ class MockLLMProvider(BaseLLMProvider):
             
             return ext  # type: ignore
 
+        # Handle DocumentExtractionSchema for Module B
+        if schema_class.__name__ == "DocumentExtractionSchema":
+            prompt_lower = prompt.lower()
+            entities = []
+            
+            if "troponin" in prompt_lower:
+                entities.append({
+                    "entity_type": "LAB_RESULT",
+                    "entity_name": "Troponin I",
+                    "value": "0.05 ng/mL",
+                    "numeric_value": 0.05,
+                    "unit": "ng/mL",
+                    "reference_range": "0.00 - 0.03 ng/mL",
+                    "is_abnormal": False,
+                    "confidence_score": 0.98,
+                    "metadata_json": {"source": "cardiac_enzymes_panel"},
+                })
+            
+            if "hemoglobin" in prompt_lower or "cbc" in prompt_lower:
+                entities.append({
+                    "entity_type": "LAB_RESULT",
+                    "entity_name": "Hemoglobin",
+                    "value": "10.2 g/dL",
+                    "numeric_value": 10.2,
+                    "unit": "g/dL",
+                    "reference_range": "13.0 - 17.5 g/dL",
+                    "is_abnormal": False,
+                    "confidence_score": 0.97,
+                    "metadata_json": {"source": "cbc_panel"},
+                })
+                
+            if "glucose" in prompt_lower or "sugar" in prompt_lower or "fasting" in prompt_lower:
+                entities.append({
+                    "entity_type": "LAB_RESULT",
+                    "entity_name": "Fasting Blood Sugar",
+                    "value": "145 mg/dL",
+                    "numeric_value": 145.0,
+                    "unit": "mg/dL",
+                    "reference_range": "70 - 99 mg/dL",
+                    "is_abnormal": False,
+                    "confidence_score": 0.99,
+                    "metadata_json": {"source": "metabolic_panel"},
+                })
+
+            if "creatinine" in prompt_lower:
+                entities.append({
+                    "entity_type": "LAB_RESULT",
+                    "entity_name": "Serum Creatinine",
+                    "value": "0.9 mg/dL",
+                    "numeric_value": 0.9,
+                    "unit": "mg/dL",
+                    "reference_range": "0.6 - 1.2 mg/dL",
+                    "is_abnormal": False,
+                    "confidence_score": 0.95,
+                    "metadata_json": {"source": "renal_panel"},
+                })
+
+            if "metformin" in prompt_lower or "prescription" in prompt_lower or "medication" in prompt_lower:
+                entities.append({
+                    "entity_type": "MEDICATION",
+                    "entity_name": "Metformin",
+                    "value": "500 mg PO BID",
+                    "numeric_value": None,
+                    "unit": "mg",
+                    "reference_range": None,
+                    "is_abnormal": False,
+                    "confidence_score": 0.96,
+                    "metadata_json": {"dosage": "500mg", "frequency": "twice daily"},
+                })
+
+            if not entities:
+                entities = [
+                    {
+                        "entity_type": "LAB_RESULT",
+                        "entity_name": "Fasting Blood Sugar",
+                        "value": "142 mg/dL",
+                        "numeric_value": 142.0,
+                        "unit": "mg/dL",
+                        "reference_range": "70 - 99 mg/dL",
+                        "is_abnormal": False,
+                        "confidence_score": 0.99,
+                        "metadata_json": {"panel": "Biochemistry"},
+                    },
+                    {
+                        "entity_type": "LAB_RESULT",
+                        "entity_name": "Hemoglobin",
+                        "value": "11.4 g/dL",
+                        "numeric_value": 11.4,
+                        "unit": "g/dL",
+                        "reference_range": "13.0 - 17.5 g/dL",
+                        "is_abnormal": False,
+                        "confidence_score": 0.95,
+                        "metadata_json": {"panel": "Hematology"},
+                    },
+                    {
+                        "entity_type": "LAB_RESULT",
+                        "entity_name": "Serum Creatinine",
+                        "value": "0.9 mg/dL",
+                        "numeric_value": 0.9,
+                        "unit": "mg/dL",
+                        "reference_range": "0.6 - 1.2 mg/dL",
+                        "is_abnormal": False,
+                        "confidence_score": 0.94,
+                        "metadata_json": {"panel": "Renal Function"},
+                    },
+                    {
+                        "entity_type": "MEDICATION",
+                        "entity_name": "Metformin",
+                        "value": "500 mg oral twice daily",
+                        "numeric_value": None,
+                        "unit": None,
+                        "reference_range": None,
+                        "is_abnormal": False,
+                        "confidence_score": 0.92,
+                        "metadata_json": {},
+                    },
+                ]
+
+            return schema_class.model_validate({
+                "document_type": "LAB_REPORT",
+                "entities": entities,
+                "summary_notes": "Extracted clinical lab panel and medications from uploaded medical report.",
+            })
+
         # Check for red flags in prompt
         red_flags = []
         if "chest pain" in prompt.lower() or "red_flag" in prompt.lower():
