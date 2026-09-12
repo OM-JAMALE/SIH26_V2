@@ -1,0 +1,5 @@
+/* SectionProgress styles */
+.section-progress {
+  display: flex;
+  gap: 0.5rem;
+}

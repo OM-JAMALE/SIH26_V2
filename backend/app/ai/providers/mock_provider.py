@@ -335,5 +335,22 @@ class MockLLMProvider(BaseLLMProvider):
         if schema_class == ClinicalSummarySchema:
             return mock_summary  # type: ignore
 
-        # Default model validation for other generic Pydantic schemas
-        return schema_class.model_validate(mock_summary.model_dump())
+        # Construct generic dictionary matching schema fields for arbitrary schema classes
+        try:
+            fields = getattr(schema_class, "model_fields", {})
+            sample_dict = {}
+            for field_name, field_info in fields.items():
+                annotation = str(field_info.annotation).lower()
+                if "str" in annotation:
+                    sample_dict[field_name] = f"mock_{field_name}"
+                elif "int" in annotation:
+                    sample_dict[field_name] = 1
+                elif "bool" in annotation:
+                    sample_dict[field_name] = True
+                elif "list" in annotation:
+                    sample_dict[field_name] = ["mock_item"]
+                else:
+                    sample_dict[field_name] = "mock_value"
+            return schema_class.model_validate(sample_dict)
+        except Exception:
+            return schema_class.model_validate(mock_summary.model_dump())

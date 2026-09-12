@@ -10,6 +10,7 @@ import './DocumentViewer.css';
 
 interface DocumentViewerProps {
   sessionId: string | null;
+  documentId?: string;
   document: DocumentResponse | null;
   onClose?: () => void;
 }

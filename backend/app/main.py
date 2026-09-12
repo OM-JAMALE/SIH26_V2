@@ -51,8 +51,9 @@ async def lifespan(app: FastAPI):
     
     # Verify database connection
     try:
+        from sqlalchemy import text
         db = SessionLocal()
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         db.close()
         logger.info("✓ Database connection verified.")
     except Exception as e:
@@ -352,8 +353,9 @@ async def health_check() -> dict:
     
     # Check database connection
     try:
+        from sqlalchemy import text
         db = SessionLocal()
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         db.close()
         health_status["database"] = "ok"
     except Exception as e:

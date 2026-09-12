@@ -180,8 +180,8 @@ def test_document_upload_size_limit(client: TestClient, db_session):
     db_session.add(session)
     db_session.commit()
 
-    # Create oversized payload (> 10MB: 10 * 1024 * 1024 + 10 bytes)
-    oversized = io.BytesIO(b"a" * (10 * 1024 * 1024 + 10))
+    # Create oversized payload (> 25MB: 26 * 1024 * 1024 bytes)
+    oversized = io.BytesIO(b"a" * (26 * 1024 * 1024))
     response = client.post(
         f"/api/v1/sessions/{session.id}/documents",
         files={"file": ("large_report.pdf", oversized, "application/pdf")},

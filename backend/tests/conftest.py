@@ -3,13 +3,17 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.main import app
-from app.db.session import Base, get_db
+from app.core.config import settings
 
-SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///./test_health_ai.db"
+# Force test database configuration before importing app models/session
+settings.database_url = "sqlite:///./test_health_ai.db"
+
+from app.main import app as fastapi_app
+from app.db.session import Base, get_db
+import app.db.models  # Register all ORM models into Base.metadata
 
 engine = create_engine(
-    SQLALCHEMY_TEST_DATABASE_URL, connect_args={"check_same_thread": False}
+    settings.database_url, connect_args={"check_same_thread": False}
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -22,7 +26,14 @@ def db_session():
         yield db
     finally:
         db.close()
-        Base.metadata.drop_all(bind=engine)
+        # Cleanly delete rows from all tables rather than dropping schema
+        with engine.connect() as conn:
+            for table in reversed(Base.metadata.sorted_tables):
+                try:
+                    conn.execute(table.delete())
+                except Exception:
+                    pass
+            conn.commit()
 
 
 @pytest.fixture(scope="function")
@@ -33,7 +44,7 @@ def client(db_session):
         finally:
             pass
 
-    app.dependency_overrides[get_db] = _override_get_db
-    with TestClient(app) as c:
+    fastapi_app.dependency_overrides[get_db] = _override_get_db
+    with TestClient(fastapi_app, raise_server_exceptions=False) as c:
         yield c
-    app.dependency_overrides.clear()
+    fastapi_app.dependency_overrides.clear()

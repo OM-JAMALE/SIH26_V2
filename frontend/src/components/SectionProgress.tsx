@@ -10,6 +10,7 @@ import './SectionProgress.css';
 interface SectionProgressProps {
   currentSection: InterviewSection;
   lifecycleStatus: string;
+  socratesState?: string;
 }
 
 const SECTIONS: InterviewSection[] = [

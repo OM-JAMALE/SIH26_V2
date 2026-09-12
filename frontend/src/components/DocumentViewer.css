@@ -1,0 +1,5 @@
+/* DocumentViewer styles */
+.document-viewer {
+  display: flex;
+  flex-direction: column;
+}

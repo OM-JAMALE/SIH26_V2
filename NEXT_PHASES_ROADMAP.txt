@@ -1,0 +1,57 @@
+================================================================================
+HEALTHCARE AI PLATFORM (SIH PS 047) - GRANULAR SUB-PHASE ROADMAP
+================================================================================
+
+--------------------------------------------------------------------------------
+PHASE A: End-to-End English Real AI Core + Portals + Glassmorphic UI
+--------------------------------------------------------------------------------
+
+[ ] SUB-PHASE A.1: Real AI Engine & English Adaptation (Backend)
+    - Wire OpenAI (gpt-4o-mini), Gemini (gemini-1.5-flash), and Ollama (qwen3).
+    - AI adaptation for non-conventional, informal, or noisy English patient text.
+    - AI document entity extractions & Pydantic validated summary generation.
+    - Verification: Pytest suite (pytest tests/test_ai_providers.py).
+
+[ ] SUB-PHASE A.2: Patient Past History & Doctor Search APIs (Backend)
+    - GET /api/v1/patients/{patient_id}/sessions: Patient past sessions lookup.
+    - GET /api/v1/doctors/patients/search: Search by ABHA ID or Patient ID.
+    - Verification: Pytest suite (pytest tests/test_api_endpoints.py).
+
+[ ] SUB-PHASE A.3: Glassmorphic UI System & Navigation Layout (Frontend)
+    - Overhaul index.css & App.css (glassmorphism, vibrant dark gradients, micro-animations).
+    - Update App.tsx layout with 5 navigation items (Intake, Voice Chat, Documents, Patient Portal, Doctor Portal).
+    - Verification: npm run build in frontend/.
+
+[ ] SUB-PHASE A.4: Patient Dashboard Portal (Frontend)
+    - Build PatientDashboardPage.tsx (ABHA profile card, health timeline, past sessions lookup, report archives).
+    - Verification: Vitest UI tests.
+
+[ ] SUB-PHASE A.5: Doctor Portal & Clinical Summary Sign-off (Frontend)
+    - Build DoctorDashboardPage.tsx (ABHA/ID search, summary review, inline edits, Accept/Reject sign-off, FHIR/ABDM exports).
+    - Verification: Vitest UI tests & End-to-End English demonstration sign-off.
+
+
+--------------------------------------------------------------------------------
+PHASE B: Regional Language Expansion & Multilingual Voice Intake
+--------------------------------------------------------------------------------
+
+[ ] SUB-PHASE B.1: Web Speech API Voice Intake & TTS Hooks (Frontend)
+    - Build useVoiceInput.ts (Speech-to-Text with 9+ Indian regional languages).
+    - Build useTextToSpeech.ts (Speech synthesis reading AI queries aloud).
+
+[ ] SUB-PHASE B.2: Multilingual Voice Chat UI Integration (Frontend)
+    - Update ConversationPage.tsx (Regional language selector pills, mic recording waveform, speaker buttons).
+
+[ ] SUB-PHASE B.3: Multilingual Clinical Translation Pipeline (Backend)
+    - AI translation layer converting regional patient text into English doctor summaries.
+    - Verification: Full multi-language test suite.
+
+
+--------------------------------------------------------------------------------
+PHASE C: Final System Verification & SIH Hackathon Demo Deployment
+--------------------------------------------------------------------------------
+
+[ ] End-to-end multi-tier health verification.
+[ ] Docker Compose stack launch (Frontend + Backend + Postgres + Redis).
+
+================================================================================

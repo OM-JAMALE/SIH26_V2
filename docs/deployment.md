@@ -1,0 +1,179 @@
+# Healthcare AI Platform - Production Deployment Guide
+
+This document details the production deployment architecture, container orchestration, environment variable configurations, database persistence, caching strategies, and security guidelines for the Healthcare AI Pre-Consultation Platform.
+
+---
+
+## 1. System Architecture & Container Topology
+
+The application is architected as a modular monolith orchestrated via **Docker Compose** comprising four primary services:
+
+```mermaid
+graph TD
+    Client[Browser Client / React App] -->|Port 5173 / HTTP| Nginx[Reverse Proxy / Caddy]
+    Nginx -->|Port 8000| Backend[FastAPI Modular Monolith App]
+    Backend -->|PostgreSQL 5432| DB[(PostgreSQL 16 DB)]
+    Backend -->|Redis 6379| Cache[(Redis Cache & Task Queue)]
+```
+
+### Docker Services Breakdown
+
+| Container Name | Technology | Port Mapping | Purpose |
+| :--- | :--- | :--- | :--- |
+| `health_ai_frontend` | Vite + React + Nginx | `5173:80` | Production static asset server & UI SPA |
+| `health_ai_backend` | Python 3.12 + FastAPI + Uvicorn | `8000:8000` | REST API, state machine, AI orchestration, adapters |
+| `health_ai_db` | PostgreSQL 16 Alpine | `5432:5432` | Relational clinical store with persistent volume mounts |
+| `health_ai_redis` | Redis 7 Alpine | `6379:6379` | Session cache, rate limiting, and background job queue |
+
+---
+
+## 2. Environment Variables & Security Credentials
+
+Configure all required environment variables in `.env` at the root of the repository before building containers.
+
+### Core Backend Configurations
+
+```ini
+# Application Mode & Secrets
+ENVIRONMENT=production
+SECRET_KEY=change-this-to-a-secure-random-64-char-string
+ALLOWED_HOSTS=localhost,127.0.0.1,your-domain.com
+
+# Database Connection (PostgreSQL)
+POSTGRES_USER=health_ai_user
+POSTGRES_PASSWORD=secure_production_password_2026
+POSTGRES_DB=health_ai_production
+POSTGRES_HOST=health_ai_db
+POSTGRES_PORT=5432
+DATABASE_URL=postgresql+psycopg://health_ai_user:secure_production_password_2026@health_ai_db:5432/health_ai_production
+
+# Redis Cache & Queue
+REDIS_HOST=health_ai_redis
+REDIS_PORT=6379
+REDIS_URL=redis://health_ai_redis:6379/0
+
+# AI Provider Configuration
+# Supported AI_PROVIDER values: mock | openai | local | anthropic
+AI_PROVIDER=openai
+OPENAI_API_KEY=sk-proj-your-actual-openai-api-key
+OPENAI_MODEL=gpt-4o-mini
+
+# CORS Policy (Comma-separated origins)
+CORS_ORIGINS=http://localhost:5173,https://your-domain.com
+```
+
+### Frontend Configurations (`frontend/.env`)
+
+```ini
+VITE_API_URL=http://localhost:8000
+VITE_APP_TITLE="Healthcare AI Pre-Consultation System"
+```
+
+> [!CAUTION]
+> **Secrets Security Warning**: Never commit real `OPENAI_API_KEY`, database passwords, or `SECRET_KEY` into Git version control. Always pass sensitive keys through environment variables or Docker secrets.
+
+---
+
+## 3. Production Deployment via Docker Compose
+
+### Prerequisites
+- Docker Engine 24.0+
+- Docker Compose v2.20+
+- Minimum 4GB RAM and 2 CPU cores
+
+### Execution Steps
+
+1. **Clone the Repository & Prepare Environment**:
+   ```bash
+   git clone https://github.com/OM-JAMALE/SIH26_V2.git
+   cd SIH26_V2
+   cp .env.example .env
+   ```
+
+2. **Build and Launch Container Stack**:
+   ```bash
+   docker compose up -d --build
+   ```
+
+3. **Verify Container Status**:
+   ```bash
+   docker compose ps
+   ```
+
+4. **Run Database Migrations (Alembic)**:
+   ```bash
+   docker compose exec backend alembic upgrade head
+   ```
+
+5. **Inspect Application Logs**:
+   ```bash
+   docker compose logs -f backend
+   ```
+
+---
+
+## 4. Verification & Health Monitoring
+
+The platform provides automated multi-tier health endpoints to verify service status and dependency readiness.
+
+### Health Endpoints
+
+- **Process Liveness**: `GET http://localhost:8000/health`
+  ```json
+  {
+    "status": "healthy",
+    "version": "1.0.0",
+    "timestamp": "2026-09-12T00:50:00Z"
+  }
+  ```
+
+- **Infrastructure Readiness**: `GET http://localhost:8000/api/v1/status`
+  ```json
+  {
+    "status": "ready",
+    "database": "connected",
+    "redis": "connected",
+    "ai_provider": "openai"
+  }
+  ```
+
+---
+
+## 5. PostgreSQL Volume & Backup Strategy
+
+Database data is persisted in a named Docker volume (`postgres_data`).
+
+### Performing Database Backup
+```bash
+docker compose exec health_ai_db pg_dump -U health_ai_user health_ai_production > backup_$(date +%Y%m%d_%H%M%S).sql
+```
+
+### Restoring Database Backup
+```bash
+cat backup_20260912_120000.sql | docker compose exec -T health_ai_db psql -U health_ai_user -d health_ai_production
+```
+
+---
+
+## 6. Reverse Proxy & SSL/TLS Configuration (Nginx / Caddy)
+
+In production, terminate SSL/TLS using Caddy or Nginx in front of the container stack.
+
+### Sample Caddyfile
+
+```caddy
+your-domain.com {
+    reverse_proxy /api/* localhost:8000
+    reverse_proxy /health localhost:8000
+    reverse_proxy /docs localhost:8000
+    reverse_proxy /* localhost:5173
+}
+```
+
+---
+
+## 7. Healthcare Safety & Audit Guarantees
+
+- **No Patient Data Logging**: Logs generated by Docker containers scrub all patient names, symptoms, and clinical findings.
+- **Deterministic Emergency Guard**: Triage logic operates on Python rules regardless of whether OpenAI, local LLM, or mock providers are configured.
+- **Resumable State**: PostgreSQL stores every turn, allowing consultation sessions to survive backend container restarts seamlessly.

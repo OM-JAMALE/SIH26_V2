@@ -3,7 +3,7 @@ def test_root_endpoint(client):
     assert response.status_code == 200
     data = response.json()
     assert "name" in data
-    assert data["health"] == "/api/v1/health"
+    assert data["health"] == "/health"
 
 
 def test_health_check_endpoint(client):

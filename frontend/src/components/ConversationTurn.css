@@ -1,0 +1,5 @@
+/* ConversationTurn styles */
+.conversation-turn {
+  display: flex;
+  margin-bottom: 1rem;
+}
