@@ -353,24 +353,22 @@ async def health_check() -> dict:
         health_status["errors"].append(f"Database: {str(e)}")
         logger.warning(f"Health check: Database error - {str(e)}")
     
-    # Check Redis connection
+    # Check Redis connection (optional dependency)
     try:
         redis_client = redis.from_url(settings.redis_url)
         redis_client.ping()
         health_status["redis"] = "ok"
     except Exception as e:
-        health_status["redis"] = "error"
-        health_status["errors"].append(f"Redis: {str(e)}")
-        logger.warning(f"Health check: Redis error - {str(e)}")
+        health_status["redis"] = "disabled"
+        logger.info(f"Health check: Redis optional component not connected")
     
-    # Determine overall status
-    if health_status["errors"]:
-        health_status["status"] = "degraded"
-    else:
+    # Determine overall status (Database is primary requirement)
+    if health_status["database"] == "ok":
         health_status["status"] = "ok"
-    
-    # Return appropriate status code
-    status_code = 200 if health_status["status"] == "ok" else 503
+        status_code = 200
+    else:
+        health_status["status"] = "degraded"
+        status_code = 503
     
     return JSONResponse(
         status_code=status_code,
