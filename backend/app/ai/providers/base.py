@@ -17,21 +17,14 @@ class BaseLLMProvider(ABC):
     def generate_structured(
         self, prompt: str, system_prompt: str, schema_class: Type[T]
     ) -> T:
-        """Generate structured output validated against a Pydantic schema class.
-        
-        Args:
-            prompt: User input/instruction text
-            system_prompt: System context and guidelines
-            schema_class: Pydantic model class for output validation
-            
-        Returns:
-            Instance of schema_class with validated data
-            
-        Raises:
-            ValueError: If output doesn't match schema
-            RuntimeError: If provider API fails
-        """
+        """Generate structured output validated against a Pydantic schema class."""
         pass
+
+    def generate_multimodal_structured(
+        self, prompt: str, system_prompt: str, schema_class: Type[T], media_bytes: bytes, mime_type: str
+    ) -> T:
+        """Generate structured output from multimodal input (image/PDF bytes + prompt) validated against a Pydantic schema class."""
+        return self.generate_structured(prompt, system_prompt, schema_class)
 
     def generate_response(
         self,

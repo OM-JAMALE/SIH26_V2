@@ -14,7 +14,7 @@ from app.core.config import settings
 def test_factory_creates_local_provider():
     provider_local = get_llm_provider("local")
     assert isinstance(provider_local, LocalLLMProvider)
-    assert provider_local.model == "qwen3"
+    assert provider_local.model == settings.ollama_model
 
     provider_ollama = get_llm_provider("ollama")
     assert isinstance(provider_ollama, LocalLLMProvider)

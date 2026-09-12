@@ -14,7 +14,10 @@ import {
   FileCheck,
   Stethoscope,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  PhoneCall,
+  Siren,
+  ExternalLink
 } from 'lucide-react';
 import { 
   createSession, 
@@ -284,6 +287,88 @@ export const ConversationPage: React.FC = () => {
         </div>
       )}
 
+      {/* DETERMINISTIC EMERGENCY ESCALATION MODAL */}
+      {isEscalated && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 animate-fade-in">
+          <div className="glass-panel p-6 md:p-8 rounded-3xl max-w-xl w-full space-y-6 border-2 border-rose-500 shadow-2xl shadow-rose-950/80 bg-slate-950/95 relative overflow-hidden">
+            {/* Top Red Glow Accent Bar */}
+            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-rose-600 via-red-500 to-rose-600 animate-pulse" />
+
+            <div className="flex items-center space-x-4">
+              <div className="w-14 h-14 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/40 animate-pulse">
+                <Siren className="w-8 h-8 text-rose-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
+                  CRITICAL EMERGENCY ALERT
+                  <span className="px-2 py-0.5 rounded-md bg-rose-500/30 text-rose-300 text-[10px] uppercase font-bold border border-rose-500/40">
+                    Red Flag
+                  </span>
+                </h3>
+                <p className="text-xs text-rose-400 font-medium mt-0.5">
+                  Deterministic Safety Rules Triggered • Chat Input Locked
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-rose-950/40 border border-rose-500/30 space-y-2 text-xs text-rose-100 leading-relaxed">
+              <div className="flex items-center space-x-2 text-rose-300 font-bold text-sm">
+                <AlertTriangle className="w-4 h-4 text-rose-400" />
+                <span>Immediate Medical Evaluation Required</span>
+              </div>
+              <p className="text-slate-200">
+                {session?.safety?.emergency_message ||
+                  'Your reported symptoms indicate a potential medical emergency. The AI intake engine has stopped questioning so you can obtain immediate medical care.'}
+              </p>
+              {session?.safety?.rule_id && (
+                <p className="text-[10px] text-rose-400 font-mono">
+                  Triggered Safety Rule: {session.safety.rule_id}
+                </p>
+              )}
+            </div>
+
+            {/* Direct Call Trigger Buttons */}
+            <div className="space-y-3 pt-1">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                Tap to Call Immediate Emergency Response Services:
+              </label>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <a
+                  href="tel:108"
+                  className="py-4 px-5 rounded-2xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-bold text-sm shadow-xl shadow-rose-600/40 transition-all flex items-center justify-center space-x-3 border border-rose-400/30 group"
+                >
+                  <PhoneCall className="w-5 h-5 text-white animate-bounce" />
+                  <div className="text-left">
+                    <span className="block text-[10px] text-rose-200 font-normal uppercase">Ambulance / Emergency</span>
+                    <span className="text-base tracking-wide">Call 108</span>
+                  </div>
+                </a>
+
+                <a
+                  href="tel:112"
+                  className="py-4 px-5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-rose-300 font-bold text-sm shadow-lg transition-all flex items-center justify-center space-x-3 border border-rose-500/40 group"
+                >
+                  <PhoneCall className="w-5 h-5 text-rose-400" />
+                  <div className="text-left">
+                    <span className="block text-[10px] text-slate-400 font-normal uppercase">National Helpline</span>
+                    <span className="text-base tracking-wide">Call 112</span>
+                  </div>
+                </a>
+              </div>
+
+              <button
+                onClick={() => window.open('https://maps.google.com/?q=nearest+hospital+emergency', '_blank')}
+                className="w-full py-3 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 font-medium text-xs border border-slate-700 transition-all flex items-center justify-center space-x-2"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Locate Nearest Hospital Emergency Room on Maps</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
         <div className="flex items-center space-x-3">
@@ -425,6 +510,22 @@ export const ConversationPage: React.FC = () => {
                   </div>
                 </div>
               )}
+
+            {/* AI Typing Indicator Skeleton */}
+            {submitting && (
+              <div className="flex items-start gap-3 animate-pulse">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-600 to-teal-400 flex items-center justify-center text-slate-950 text-xs font-bold shrink-0 shadow-md">
+                  <Sparkles className="w-4 h-4 animate-spin text-slate-950" />
+                </div>
+                <div className="glass-card p-4 rounded-2xl rounded-tl-none max-w-xl border border-brand-500/30 space-y-2">
+                  <div className="flex items-center gap-2 text-brand-300 text-xs font-semibold">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>AI Assistant is analyzing your response...</span>
+                  </div>
+                  <div className="h-2 w-56 bg-brand-500/20 rounded-full animate-pulse" />
+                </div>
+              </div>
+            )}
 
             <div ref={messagesEndRef} />
           </div>

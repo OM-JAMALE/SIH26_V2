@@ -12,13 +12,11 @@ import {
   AlertCircle,
   Menu,
   X,
-  ChevronRight,
   RefreshCw,
   Sparkles,
-  Server,
-  Layers,
   HeartHandshake,
-  ExternalLink,
+  History,
+  Stethoscope,
 } from 'lucide-react';
 import { fetchHealth } from '../api/client';
 import { ToastProvider, useToast } from '../components/common/Toast';
@@ -43,34 +41,49 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     path: '/converse',
-    label: 'Conversations',
-    description: 'SOCRATES clinical interview',
+    label: 'AI Interview',
+    description: 'SOCRATES clinical history',
     icon: MessageSquareHeart,
-    badge: 'Prompt 9',
+    badge: 'GPT-4o / Ollama',
     stepNumber: '02',
   },
   {
     path: '/documents',
-    label: 'Documents',
+    label: 'Document Vault',
     description: 'Digitization & lab extraction',
     icon: FileText,
-    badge: 'Prompt 10',
+    badge: 'Vision OCR',
     stepNumber: '03',
   },
   {
     path: '/summary',
-    label: 'Summaries',
+    label: 'Clinical Summary',
     description: 'Structured review & sign-off',
     icon: ClipboardCheck,
-    badge: 'Prompt 11',
+    badge: 'Physician Review',
     stepNumber: '04',
+  },
+  {
+    path: '/history',
+    label: 'Patient History',
+    description: 'Past sessions & health records',
+    icon: History,
+    stepNumber: '05',
+  },
+  {
+    path: '/doctor',
+    label: 'Doctor Portal',
+    description: 'Patient search & sign-off',
+    icon: Stethoscope,
+    badge: 'Doctor View',
+    stepNumber: '06',
   },
   {
     path: '/consent',
     label: 'Consent & FHIR',
     description: 'Auditable ABDM export sandbox',
     icon: ShieldCheck,
-    stepNumber: '05',
+    stepNumber: '07',
   },
 ];
 
@@ -99,8 +112,8 @@ const MainLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-brand-500 selection:text-white">
-      {/* Top Header Bar */}
-      <header className="sticky top-0 z-40 h-16 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl px-4 lg:px-6 flex items-center justify-between">
+      {/* Top Glassmorphic Header Bar */}
+      <header className="sticky top-0 z-40 h-16 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl px-4 lg:px-6 flex items-center justify-between shadow-glass">
         <div className="flex items-center gap-3">
           {/* Mobile menu button */}
           <button
@@ -122,18 +135,18 @@ const MainLayout: React.FC = () => {
 
           {/* Logo Brand */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 via-teal-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-brand-500/20">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 via-teal-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-brand-500/25">
               <Activity className="w-5 h-5 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-base tracking-tight text-white">Health AI</span>
-                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20">
-                  Pre-Consultation Platform
+                <span className="font-bold font-heading text-lg tracking-tight text-white">Health AI</span>
+                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-300 border border-brand-500/30">
+                  SIH PS 047 Platform
                 </span>
               </div>
               <p className="hidden sm:block text-[11px] text-slate-400">
-                Clinical History Taking • Document Digitization • Structured ABDM/FHIR
+                Clinical History Taking • Document Digitization • ABDM/FHIR Integration
               </p>
             </div>
           </div>
@@ -143,10 +156,11 @@ const MainLayout: React.FC = () => {
         <div className="flex items-center gap-3">
           {/* Active Session Indicator */}
           {activeSessionId && (
-            <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-800 text-xs">
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-xl glass-panel border border-brand-500/30 text-xs">
+              <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
               <span className="text-slate-400">Session:</span>
               <span className="font-mono text-brand-300 font-semibold truncate max-w-[120px]">
-                {activeSessionId.slice(0, 12)}...
+                {activeSessionId.slice(0, 8)}...
               </span>
               <button
                 onClick={handleResetSession}
@@ -161,7 +175,7 @@ const MainLayout: React.FC = () => {
           {/* System API Health Badge */}
           <div
             onClick={() => refetchHealth()}
-            className="flex items-center space-x-2 text-xs px-3 py-1.5 rounded-xl border border-slate-800/80 bg-slate-900/50 hover:bg-slate-900 transition-all cursor-pointer select-none"
+            className="flex items-center space-x-2 text-xs px-3 py-1.5 rounded-xl border border-slate-800/80 bg-slate-900/60 hover:bg-slate-800 transition-all cursor-pointer select-none"
             title="Click to recheck API connection status"
           >
             <span className="text-slate-400 hidden sm:inline">Backend API:</span>
@@ -177,7 +191,7 @@ const MainLayout: React.FC = () => {
             ) : health?.status === 'healthy' ? (
               <span className="flex items-center gap-1.5 text-emerald-400 font-medium">
                 <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                <CheckCircle2 className="w-3.5 h-3.5" /> Connected ({health.environment || 'local'})
+                <CheckCircle2 className="w-3.5 h-3.5" /> Connected
               </span>
             ) : (
               <span className="flex items-center gap-1.5 text-amber-400 font-medium">
@@ -192,20 +206,20 @@ const MainLayout: React.FC = () => {
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar for Desktop */}
         <aside
-          className={`hidden lg:flex flex-col border-r border-slate-800/80 bg-slate-950/60 backdrop-blur-md transition-all duration-300 ease-in-out shrink-0 z-30 ${
+          className={`hidden lg:flex flex-col border-r border-slate-800/80 bg-slate-950/70 backdrop-blur-xl transition-all duration-300 ease-in-out shrink-0 z-30 ${
             sidebarOpen ? 'w-64' : 'w-20'
           }`}
         >
           {/* Navigation Items */}
-          <div className="p-3 space-y-1.5 flex-1 overflow-y-auto">
-            <div className={`px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400 ${!sidebarOpen && 'text-center'}`}>
-              {sidebarOpen ? 'Workflow Navigation' : 'Nav'}
+          <div className="p-3 space-y-1 flex-1 overflow-y-auto">
+            <div className={`px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 ${!sidebarOpen && 'text-center'}`}>
+              {sidebarOpen ? 'Navigation Menu' : 'Nav'}
             </div>
 
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const targetUrl =
-                item.path !== '/identify' && activeSessionId
+                item.path !== '/identify' && item.path !== '/history' && item.path !== '/doctor' && activeSessionId
                   ? `${item.path}?session_id=${activeSessionId}`
                   : item.path;
               const isCurrent = location.pathname.startsWith(item.path);
@@ -214,17 +228,17 @@ const MainLayout: React.FC = () => {
                 <NavLink
                   key={item.path}
                   to={targetUrl}
-                  className={`group flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
+                  className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                     isCurrent
-                      ? 'bg-brand-500/15 text-brand-300 border border-brand-500/30 shadow-sm shadow-brand-500/5'
+                      ? 'bg-brand-500/15 text-brand-300 border border-brand-500/30 shadow-glow-brand'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent'
                   } ${!sidebarOpen ? 'justify-center px-2' : ''}`}
                   title={!sidebarOpen ? `${item.label} — ${item.description}` : undefined}
                 >
                   <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all ${
                       isCurrent
-                        ? 'bg-brand-500 text-slate-950 font-bold'
+                        ? 'bg-gradient-to-tr from-brand-600 to-teal-400 text-slate-950 font-bold shadow-md'
                         : 'bg-slate-900 text-slate-400 group-hover:text-white group-hover:bg-slate-800'
                     }`}
                   >
@@ -234,14 +248,14 @@ const MainLayout: React.FC = () => {
                   {sidebarOpen && (
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="truncate font-medium">{item.label}</span>
+                        <span className="truncate font-semibold text-xs">{item.label}</span>
                         {item.badge && (
-                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 group-hover:text-slate-300">
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-900/80 text-brand-400 border border-brand-500/20">
                             {item.badge}
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                      <p className="text-[10px] text-slate-400 truncate mt-0.5">
                         {item.description}
                       </p>
                     </div>
@@ -254,23 +268,19 @@ const MainLayout: React.FC = () => {
           {/* Sidebar Footer Info */}
           {sidebarOpen ? (
             <div className="p-4 border-t border-slate-800/80 bg-slate-950/40 text-xs text-slate-400 space-y-2">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-slate-400 font-medium">Architecture</span>
-                <span className="text-brand-400 font-mono">Monolith v1</span>
-              </div>
-              <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800/60 text-[11px] space-y-1">
-                <div className="flex items-center gap-1.5 text-slate-300">
+              <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800/60 text-[11px] space-y-1">
+                <div className="flex items-center gap-1.5 text-slate-200 font-semibold">
                   <HeartHandshake className="w-3.5 h-3.5 text-brand-400 shrink-0" />
-                  <span>Deterministic Guard</span>
+                  <span>Deterministic Guardrail</span>
                 </div>
                 <p className="text-[10px] text-slate-400 leading-tight">
-                  LLM is not source of truth. Rules control clinical escalations.
+                  LLM is not source of truth. Rules control clinical escalations & database mutations.
                 </p>
               </div>
             </div>
           ) : (
             <div className="p-3 border-t border-slate-800/80 flex justify-center">
-              <span className="w-2.5 h-2.5 rounded-full bg-brand-500 animate-pulse" title="System active" />
+              <span className="w-2.5 h-2.5 rounded-full bg-brand-400 animate-pulse" title="System active" />
             </div>
           )}
         </aside>
@@ -279,14 +289,14 @@ const MainLayout: React.FC = () => {
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-50 lg:hidden flex">
             <div
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+              className="fixed inset-0 bg-black/80 backdrop-blur-md"
               onClick={() => setMobileMenuOpen(false)}
             />
             <div className="relative w-72 max-w-[80vw] bg-slate-950 border-r border-slate-800 p-4 flex flex-col h-full z-10 space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <div className="flex items-center gap-2">
                   <Activity className="w-5 h-5 text-brand-400" />
-                  <span className="font-bold text-white">Health AI Menu</span>
+                  <span className="font-bold text-white font-heading">Health AI Menu</span>
                 </div>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
@@ -300,7 +310,7 @@ const MainLayout: React.FC = () => {
                 {NAV_ITEMS.map((item) => {
                   const Icon = item.icon;
                   const targetUrl =
-                    item.path !== '/identify' && activeSessionId
+                    item.path !== '/identify' && item.path !== '/history' && item.path !== '/doctor' && activeSessionId
                       ? `${item.path}?session_id=${activeSessionId}`
                       : item.path;
                   const isCurrent = location.pathname.startsWith(item.path);
@@ -346,7 +356,7 @@ const MainLayout: React.FC = () => {
         )}
 
         {/* Main Content Area Wrapped with Error Boundary */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-gradient-to-b from-slate-950 via-slate-900/30 to-slate-950">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto w-full">
             <ErrorBoundary
               fallbackTitle="Clinical Module Error"
@@ -359,10 +369,10 @@ const MainLayout: React.FC = () => {
       </div>
 
       {/* Global Footer */}
-      <footer className="border-t border-slate-800/60 bg-slate-950/80 py-3 px-6 text-xs text-slate-400">
+      <footer className="border-t border-slate-800/60 bg-slate-950/90 py-3 px-6 text-xs text-slate-400 backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
             <span>Healthcare AI Pre-Consultation Monolith • Auditable ABDM / FHIR Integration</span>
           </div>
           <div className="flex items-center gap-4 text-slate-400 font-mono text-[11px]">

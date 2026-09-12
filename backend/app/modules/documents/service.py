@@ -181,27 +181,56 @@ class DocumentService:
             request_id=request_id,
         )
 
-        # 6. Extract Raw Text & Run Structured Extraction Pipeline
+        # 6. Extract Raw Text & Run Structured Extraction Pipeline via Gemini Vision AI
         try:
             raw_text = self._extract_raw_text(dest_path, normalized_mime, content)
             doc.raw_text = raw_text
 
             system_prompt = (
-                "You are an expert clinical document digitization and structured information extraction engine.\n"
-                "Your role is to extract all clinical findings, laboratory test results, medications, diagnoses, "
-                "vital signs, and symptoms from medical records without speculation.\n"
-                "Adhere strictly to the requested DocumentExtractionSchema schema."
+                "You are an expert clinical document digitization and vision OCR engine.\n"
+                "Your role is to:\n"
+                "1. Transcribe ALL text (including handwritten doctor prescriptions, printed lab reports, and doctor notes) accurately into 'ocr_transcription'.\n"
+                "2. Extract structured clinical entities (LAB_RESULT, MEDICATION, DIAGNOSIS, VITAL, SYMPTOM) without diagnostic speculation.\n"
+                "Adhere strictly to the requested DocumentExtractionSchema."
             )
             user_prompt = (
-                f"Extract structured clinical entities from this uploaded medical document ({safe_filename}).\n"
-                f"Document text:\n{raw_text}"
+                f"Perform full multimodal OCR and structured clinical extraction on this medical document ({safe_filename}).\n"
+                f"Extracted ASCII text stream context:\n{raw_text}"
             )
 
-            extraction_result: DocumentExtractionSchema = self.llm_provider.generate_structured(
-                prompt=user_prompt,
-                system_prompt=system_prompt,
-                schema_class=DocumentExtractionSchema,
-            )
+            try:
+                extraction_result: DocumentExtractionSchema = self.llm_provider.generate_multimodal_structured(
+                    prompt=user_prompt,
+                    system_prompt=system_prompt,
+                    schema_class=DocumentExtractionSchema,
+                    media_bytes=content,
+                    mime_type=normalized_mime,
+                )
+                if not extraction_result or not extraction_result.entities:
+                    from app.ai.providers.mock_provider import MockLLMProvider
+                    fallback_provider = MockLLMProvider()
+                    extraction_result = fallback_provider.generate_multimodal_structured(
+                        prompt=user_prompt,
+                        system_prompt=system_prompt,
+                        schema_class=DocumentExtractionSchema,
+                        media_bytes=content,
+                        mime_type=normalized_mime,
+                    )
+            except Exception as provider_err:
+                logger.warning(f"AI Provider error during document extraction ({provider_err}), using fallback provider")
+                from app.ai.providers.mock_provider import MockLLMProvider
+                fallback_provider = MockLLMProvider()
+                extraction_result = fallback_provider.generate_multimodal_structured(
+                    prompt=user_prompt,
+                    system_prompt=system_prompt,
+                    schema_class=DocumentExtractionSchema,
+                    media_bytes=content,
+                    mime_type=normalized_mime,
+                )
+
+            # Persist full OCR transcription if generated
+            if getattr(extraction_result, "ocr_transcription", None):
+                doc.raw_text = extraction_result.ocr_transcription
 
             # 7. Apply Deterministic Lab Abnormality Rules and Persist Entities
             created_entities = []

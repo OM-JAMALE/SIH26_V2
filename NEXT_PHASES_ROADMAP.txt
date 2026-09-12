@@ -6,7 +6,7 @@ HEALTHCARE AI PLATFORM (SIH PS 047) - GRANULAR SUB-PHASE ROADMAP
 PHASE A: End-to-End English Real AI Core + Portals + Glassmorphic UI
 --------------------------------------------------------------------------------
 
-[ ] SUB-PHASE A.1: Real AI Engine & English Adaptation (Backend)
+[x] SUB-PHASE A.1: Real AI Engine & English Adaptation (Backend)
     - Wire OpenAI (gpt-4o-mini), Gemini (gemini-1.5-flash), and Ollama (qwen3).
     - AI adaptation for non-conventional, informal, or noisy English patient text.
     - AI document entity extractions & Pydantic validated summary generation.

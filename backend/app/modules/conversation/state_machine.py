@@ -95,10 +95,19 @@ class InterviewStateMachine:
 def update_clinical_history(
     history: ClinicalHistory, extraction: StructuredExtraction
 ) -> ClinicalHistory:
-    """Merges structured extraction findings into accumulated ClinicalHistory."""
-    # 1. Chief Complaint
+    """Merges structured extraction findings into accumulated ClinicalHistory with strict deduplication."""
+    # 1. Chief Complaint Deduplication
     if extraction.extracted_symptoms:
-        history.chief_complaint.extend(extraction.extracted_symptoms)
+        existing_symptoms = {
+            c.symptom.lower().strip()
+            for c in history.chief_complaint
+            if getattr(c, "symptom", None)
+        }
+        for item in extraction.extracted_symptoms:
+            sym_name = getattr(item, "symptom", None) or getattr(item, "name", None)
+            if sym_name and sym_name.lower().strip() not in existing_symptoms:
+                history.chief_complaint.append(item)
+                existing_symptoms.add(sym_name.lower().strip())
 
     # 2. SOCRATES updates
     soc_up = extraction.socrates_updates
@@ -111,7 +120,11 @@ def update_clinical_history(
     if soc_up.radiation:
         history.hpi_socrates.radiation = soc_up.radiation
     if soc_up.associated_symptoms:
-        history.hpi_socrates.associated_symptoms.extend(soc_up.associated_symptoms)
+        existing_assoc = {s.lower().strip() for s in history.hpi_socrates.associated_symptoms if isinstance(s, str)}
+        for s in soc_up.associated_symptoms:
+            if isinstance(s, str) and s.lower().strip() not in existing_assoc:
+                history.hpi_socrates.associated_symptoms.append(s)
+                existing_assoc.add(s.lower().strip())
     if soc_up.time_course:
         history.hpi_socrates.time_course = soc_up.time_course
     if soc_up.exacerbating_relieving_factors:
@@ -119,31 +132,59 @@ def update_clinical_history(
     if soc_up.severity is not None:
         history.hpi_socrates.severity = soc_up.severity
 
-    # 3. Medical History
+    # 3. Medical History Deduplication
     if extraction.medical_history_updates:
-        history.past_medical_history.extend(extraction.medical_history_updates)
+        existing_med_hist = {
+            m.condition.lower().strip() for m in history.past_medical_history if getattr(m, "condition", None)
+        }
+        for item in extraction.medical_history_updates:
+            cond = getattr(item, "condition", None)
+            if cond and cond.lower().strip() not in existing_med_hist:
+                history.past_medical_history.append(item)
+                existing_med_hist.add(cond.lower().strip())
 
-    # 4. Surgical History
+    # 4. Surgical History Deduplication
     if extraction.surgical_history_updates:
-        history.past_surgical_history.extend(extraction.surgical_history_updates)
+        existing_surg = {
+            s.procedure.lower().strip() for s in history.past_surgical_history if getattr(s, "procedure", None)
+        }
+        for item in extraction.surgical_history_updates:
+            proc = getattr(item, "procedure", None)
+            if proc and proc.lower().strip() not in existing_surg:
+                history.past_surgical_history.append(item)
+                existing_surg.add(proc.lower().strip())
 
-    # 5. Medications
+    # 5. Medications Deduplication
     if extraction.medication_updates:
-        history.medications.extend(extraction.medication_updates)
+        existing_meds = {
+            m.name.lower().strip() for m in history.medications if getattr(m, "name", None)
+        }
+        for item in extraction.medication_updates:
+            m_name = getattr(item, "name", None)
+            if m_name and m_name.lower().strip() not in existing_meds:
+                history.medications.append(item)
+                existing_meds.add(m_name.lower().strip())
 
-    # 6. Allergies
+    # 6. Allergies Deduplication
     if extraction.allergy_updates:
-        history.allergies.extend(extraction.allergy_updates)
+        existing_allergies = {
+            a.allergen.lower().strip() for a in history.allergies if getattr(a, "allergen", None)
+        }
+        for item in extraction.allergy_updates:
+            alg = getattr(item, "allergen", None)
+            if alg and alg.lower().strip() not in existing_allergies:
+                history.allergies.append(item)
+                existing_allergies.add(alg.lower().strip())
 
-    # 7. Family History
+    # 7. Family History Deduplication
     if extraction.family_history_updates:
         history.family_history.extend(extraction.family_history_updates)
 
-    # 8. Personal History
+    # 8. Personal History Deduplication
     if extraction.personal_history_updates:
         history.personal_history.extend(extraction.personal_history_updates)
 
-    # 9. Review of Systems
+    # 9. Review of Systems Deduplication
     if extraction.ros_updates:
         history.review_of_systems.extend(extraction.ros_updates)
 

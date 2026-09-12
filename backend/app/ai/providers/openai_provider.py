@@ -25,7 +25,7 @@ class OpenAIProvider(BaseLLMProvider):
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model: str = "gpt-4-turbo-preview",
+        model: str = "gpt-4o-mini",
         temperature: float = 0.1,
         timeout: float = 30.0,
         max_retries: int = 3,
@@ -34,7 +34,7 @@ class OpenAIProvider(BaseLLMProvider):
         
         Args:
             api_key: OpenAI API key (defaults to OPENAI_API_KEY env var)
-            model: Model to use (default: gpt-4-turbo-preview)
+            model: Model to use (default: gpt-4o-mini)
             temperature: Sampling temperature (0-1, lower = deterministic)
             timeout: Request timeout in seconds
             max_retries: Number of retries on failure
@@ -60,10 +60,20 @@ class OpenAIProvider(BaseLLMProvider):
                 "or provide api_key parameter."
             )
 
+    def _extract_json_substring(self, text: str) -> str:
+        """Strip markdown code fence wrappers if present."""
+        import re
+        cleaned = text.strip()
+        pattern = r"^```(?:json)?\s*\n?(.*?)\n?```$"
+        match = re.search(pattern, cleaned, re.DOTALL | re.IGNORECASE)
+        if match:
+            cleaned = match.group(1).strip()
+        return cleaned
+
     def generate_structured(
         self, prompt: str, system_prompt: str, schema_class: Type[T]
     ) -> T:
-        """Generate structured output using OpenAI's function calling.
+        """Generate structured output using OpenAI's response format or function calling.
         
         Args:
             prompt: User prompt/instruction
@@ -72,10 +82,6 @@ class OpenAIProvider(BaseLLMProvider):
             
         Returns:
             Instance of schema_class with validated data
-            
-        Raises:
-            ValueError: If API key missing or output invalid
-            RuntimeError: If API call fails
         """
         self._validate_api_key()
 
@@ -88,22 +94,39 @@ class OpenAIProvider(BaseLLMProvider):
 
         try:
             client = openai.OpenAI(api_key=self.api_key)
+            schema_json = json.dumps(schema_class.model_json_schema(), indent=2)
 
-            # Convert Pydantic schema to JSON schema for function calling
-            schema_json = schema_class.model_json_schema()
+            enhanced_system_prompt = (
+                f"{system_prompt}\n\n"
+                f"MUST RESPOND ONLY WITH VALID JSON matching this JSON Schema:\n{schema_json}"
+            )
 
-            # Define function schema for OpenAI
+            # Modern JSON mode attempt
+            try:
+                response = client.chat.completions.create(
+                    model=self.model,
+                    temperature=self.temperature,
+                    timeout=self.timeout,
+                    response_format={"type": "json_object"},
+                    messages=[
+                        {"role": "system", "content": enhanced_system_prompt},
+                        {"role": "user", "content": prompt},
+                    ],
+                )
+                if response.choices and response.choices[0].message.content:
+                    raw_text = self._extract_json_substring(response.choices[0].message.content)
+                    data = json.loads(raw_text)
+                    return schema_class.model_validate(data)
+            except Exception as json_err:
+                logger.warning(f"JSON mode call fallback to function calling: {json_err}")
+
+            # Function calling fallback
             function_definition = {
                 "name": "extract_structured_data",
-                "description": f"Extract structured information matching this schema: {schema_class.__name__}",
-                "parameters": {
-                    "type": "object",
-                    "properties": schema_json.get("properties", {}),
-                    "required": schema_json.get("required", []),
-                },
+                "description": f"Extract structured information matching schema {schema_class.__name__}",
+                "parameters": json.loads(schema_json),
             }
 
-            # Make API call with function calling
             response = client.chat.completions.create(
                 model=self.model,
                 temperature=self.temperature,
@@ -116,22 +139,11 @@ class OpenAIProvider(BaseLLMProvider):
                 function_call={"name": "extract_structured_data"},
             )
 
-            # Extract function call response
             if not response.choices or not response.choices[0].message.function_call:
-                raise ValueError("No function call response from OpenAI")
+                raise ValueError("No valid structured response from OpenAI")
 
             function_call = response.choices[0].message.function_call
-            if function_call.name != "extract_structured_data":
-                raise ValueError(f"Unexpected function call: {function_call.name}")
-
-            # Parse and validate output
-            try:
-                data = json.loads(function_call.arguments)
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse function arguments: {function_call.arguments}")
-                raise ValueError(f"OpenAI returned invalid JSON: {str(e)}") from e
-
-            # Validate against schema
+            data = json.loads(function_call.arguments)
             result = schema_class.model_validate(data)
             logger.info(f"OpenAI structured extraction successful for {schema_class.__name__}")
             return result

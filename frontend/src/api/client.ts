@@ -177,10 +177,7 @@ export async function rejectSummary(sessionId: string, reason: string): Promise<
   });
 }
 
-// ==========================================
 // Module B: Medical Document Digitization
-// ==========================================
-
 export interface ExtractedEntityData {
   id: string;
   session_id: string;
@@ -256,4 +253,39 @@ export async function deleteDocument(
   return request<DocumentDeleteResponseData>(`/sessions/${sessionId}/documents/${documentId}`, {
     method: 'DELETE',
   });
+}
+
+// Patient & Doctor Portal APIs
+export interface PatientData {
+  id: string;
+  national_health_id?: string;
+  first_name: string;
+  last_name: string;
+  dob: string;
+  gender: string;
+  contact_number?: string;
+  created_at?: string;
+}
+
+export async function createOrGetPatient(patient: Partial<PatientData>): Promise<PatientData> {
+  return request<PatientData>('/patients', {
+    method: 'POST',
+    body: JSON.stringify(patient),
+  });
+}
+
+export async function fetchPatientDetails(patientId: string): Promise<PatientData> {
+  return request<PatientData>(`/patients/${patientId}`);
+}
+
+export async function fetchPatientSessions(patientId: string): Promise<any[]> {
+  return request<any[]>(`/patients/${patientId}/sessions`);
+}
+
+export async function searchPatientsForDoctor(query: string): Promise<any[]> {
+  return request<any[]>(`/doctors/patients/search?query=${encodeURIComponent(query)}`);
+}
+
+export async function fetchDoctorFullHistory(patientId: string): Promise<any> {
+  return request<any>(`/doctors/patients/${patientId}/full-history`);
 }

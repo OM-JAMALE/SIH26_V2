@@ -38,7 +38,7 @@ def test_session(db_session):
 @pytest.mark.anyio
 async def test_upload_pdf(db_session, test_session):
     """Verify uploading a valid PDF document."""
-    service = DocumentService()
+    service = DocumentService("mock")
     content = b"%PDF-1.4 header content for testing lab report"
     upload_file = UploadFile(
         filename="report.pdf",
@@ -61,7 +61,7 @@ async def test_upload_pdf(db_session, test_session):
 @pytest.mark.anyio
 async def test_upload_image(db_session, test_session):
     """Verify uploading valid PNG image."""
-    service = DocumentService()
+    service = DocumentService("mock")
     png_bytes = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
     upload_png = UploadFile(
         filename="scan.png",
@@ -80,7 +80,7 @@ async def test_upload_image(db_session, test_session):
 @pytest.mark.anyio
 async def test_reject_invalid_type(db_session, test_session):
     """Verify rejecting disallowed extension."""
-    service = DocumentService()
+    service = DocumentService("mock")
     invalid_bytes = b"unsupported binary content"
     upload_invalid = UploadFile(
         filename="malicious.exe",

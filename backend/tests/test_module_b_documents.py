@@ -229,10 +229,12 @@ def test_document_upload_and_extraction_pipeline_success(client: TestClient, db_
     doc_id = data["id"]
 
     # 3. Verify Database entities created
+    db_session.expire_all()
     doc_in_db = db_session.query(Document).filter(Document.id == uuid.UUID(doc_id)).first()
     assert doc_in_db is not None
     assert doc_in_db.processing_status == "EXTRACTED"
 
+    db_session.expire_all()
     entities_in_db = (
         db_session.query(ExtractedEntity)
         .filter(ExtractedEntity.document_id == uuid.UUID(doc_id))

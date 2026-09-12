@@ -17,7 +17,10 @@ import {
   Pill,
   HeartPulse,
   Stethoscope,
-  Info
+  Info,
+  Eye,
+  EyeOff,
+  FileSearch
 } from 'lucide-react';
 import { 
   createSession,
@@ -46,6 +49,7 @@ export const DocumentsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<string>('ALL');
   const [abnormalOnly, setAbnormalOnly] = useState<boolean>(false);
+  const [expandedOcrId, setExpandedOcrId] = useState<string | null>(null);
 
   // Fetch documents and entities
   const loadData = async (sessId: string) => {
@@ -301,53 +305,97 @@ export const DocumentsPage: React.FC = () => {
           <div className="space-y-3">
             {documents.map((doc) => {
               const isPdf = doc.mime_type.includes('pdf');
+              const isHandwritten = doc.raw_text?.includes('HANDWRITTEN') || doc.raw_text?.includes('Rx') || !isPdf;
+              const isOcrExpanded = expandedOcrId === doc.id;
+
               return (
                 <div
                   key={doc.id}
-                  className="p-4 rounded-xl bg-slate-900/70 border border-slate-800 flex items-center justify-between gap-4 hover:border-slate-700 transition-all"
+                  className="rounded-xl bg-slate-900/70 border border-slate-800 hover:border-slate-700 transition-all overflow-hidden"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">
-                      {isPdf ? (
-                        <FileText className="w-5 h-5 text-red-400" />
-                      ) : (
-                        <Image className="w-5 h-5 text-cyan-400" />
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="font-semibold text-xs text-white truncate">{doc.filename}</div>
-                      <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
-                        <span>{formatFileSize(doc.file_size)}</span>
-                        <span>•</span>
-                        <span>{new Date(doc.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  <div className="p-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">
+                        {isPdf ? (
+                          <FileText className="w-5 h-5 text-red-400" />
+                        ) : (
+                          <Image className="w-5 h-5 text-cyan-400" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-semibold text-xs text-white truncate flex items-center gap-2">
+                          <span>{doc.filename}</span>
+                          {isHandwritten && (
+                            <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[9px] font-bold border border-purple-500/30">
+                              📜 Gemini Vision OCR
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+                          <span>{formatFileSize(doc.file_size)}</span>
+                          <span>•</span>
+                          <span>{new Date(doc.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
                       </div>
                     </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {doc.raw_text && (
+                        <button
+                          onClick={() => setExpandedOcrId(isOcrExpanded ? null : doc.id)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all ${
+                            isOcrExpanded
+                              ? 'bg-brand-500/20 text-brand-300 border border-brand-500/40'
+                              : 'bg-slate-800 text-slate-300 hover:text-white border border-slate-700'
+                          }`}
+                          title="View OCR Raw Transcription"
+                        >
+                          {isOcrExpanded ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5 text-brand-400" />}
+                          <span>{isOcrExpanded ? 'Hide OCR' : 'View OCR Text'}</span>
+                        </button>
+                      )}
+
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${
+                          doc.processing_status === 'EXTRACTED'
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                            : doc.processing_status === 'PENDING'
+                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                            : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                        }`}
+                      >
+                        {doc.processing_status === 'EXTRACTED' && <CheckCircle2 className="w-3 h-3" />}
+                        {doc.processing_status === 'PENDING' && <RefreshCw className="w-3 h-3 animate-spin" />}
+                        {doc.processing_status === 'FAILED' && <AlertTriangle className="w-3 h-3" />}
+                        {doc.processing_status}
+                      </span>
+
+                      <button
+                        onClick={() => handleDelete(doc.id)}
+                        className="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                        title="Delete Document"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${
-                        doc.processing_status === 'EXTRACTED'
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                          : doc.processing_status === 'PENDING'
-                          ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                          : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                      }`}
-                    >
-                      {doc.processing_status === 'EXTRACTED' && <CheckCircle2 className="w-3 h-3" />}
-                      {doc.processing_status === 'PENDING' && <RefreshCw className="w-3 h-3 animate-spin" />}
-                      {doc.processing_status === 'FAILED' && <AlertTriangle className="w-3 h-3" />}
-                      {doc.processing_status}
-                    </span>
-
-                    <button
-                      onClick={() => handleDelete(doc.id)}
-                      className="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                      title="Delete Document"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                  {/* Expandable Raw OCR Text Drawer */}
+                  {isOcrExpanded && doc.raw_text && (
+                    <div className="p-4 bg-slate-950/90 border-t border-slate-800/80 space-y-2 text-xs">
+                      <div className="flex items-center justify-between text-slate-400 font-semibold text-[11px]">
+                        <span className="flex items-center gap-1.5 text-brand-300">
+                          <FileSearch className="w-3.5 h-3.5 text-brand-400" /> Multimodal OCR Transcription Text
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-mono">
+                          {doc.raw_text.length} chars
+                        </span>
+                      </div>
+                      <pre className="p-3 rounded-lg bg-slate-900 font-mono text-[11px] text-slate-300 leading-relaxed overflow-x-auto whitespace-pre-wrap border border-slate-800">
+                        {doc.raw_text}
+                      </pre>
+                    </div>
+                  )}
                 </div>
               );
             })}

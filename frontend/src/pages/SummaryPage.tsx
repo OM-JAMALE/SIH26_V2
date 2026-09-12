@@ -317,58 +317,116 @@ export const SummaryPage: React.FC = () => {
           {/* Structured Clinical Sections Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Chief Complaint */}
-            <div className="glass-panel p-5 rounded-2xl space-y-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-brand-400">Chief Complaints</h4>
-              {activeSummary.chief_complaint?.map((item: any, i: number) => (
-                <div key={i} className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs flex justify-between">
-                  <span className="font-semibold text-white">{item.name}</span>
-                  <span className="text-slate-400">{item.details}</span>
-                </div>
-              ))}
+            <div className="glass-panel p-5 rounded-2xl space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-brand-400 flex items-center justify-between">
+                <span>Chief Complaints</span>
+                <span className="text-[10px] text-slate-400 font-normal">Reported Symptoms</span>
+              </h4>
+              {activeSummary.chief_complaint && activeSummary.chief_complaint.length > 0 ? (
+                activeSummary.chief_complaint.map((item: any, i: number) => (
+                  <div key={i} className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-brand-400 shrink-0" />
+                      <span className="font-bold text-white text-sm">{item.name || item.symptom}</span>
+                    </div>
+                    {item.details && (
+                      <span className="text-slate-300 text-xs px-2.5 py-1 rounded bg-slate-800 border border-slate-700 font-medium">
+                        {item.details}
+                      </span>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-slate-500 text-xs py-2">No chief complaints reported.</p>
+              )}
             </div>
 
             {/* History of Present Illness (HPI) */}
-            <div className="glass-panel p-5 rounded-2xl space-y-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-brand-400">History of Present Illness (HPI)</h4>
-              {activeSummary.history_of_present_illness?.map((item: any, i: number) => (
-                <div key={i} className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs flex justify-between">
-                  <span className="font-semibold text-slate-200">{item.name}</span>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                    item.status === 'DENIED' ? 'bg-rose-500/20 text-rose-300' : 'bg-brand-500/20 text-brand-300'
-                  }`}>
-                    {item.status}
-                  </span>
-                </div>
-              ))}
+            <div className="glass-panel p-5 rounded-2xl space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-brand-400 flex items-center justify-between">
+                <span>History of Present Illness (HPI)</span>
+                <span className="text-[10px] text-slate-400 font-normal">SOCRATES Exploration</span>
+              </h4>
+              {activeSummary.history_of_present_illness && activeSummary.history_of_present_illness.length > 0 ? (
+                activeSummary.history_of_present_illness.map((item: any, i: number) => {
+                  const valText = item.details || item.value;
+                  return (
+                    <div key={i} className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <span className="font-semibold text-brand-300">{item.name}</span>
+                      {valText ? (
+                        <span className="text-slate-100 font-medium bg-slate-800/80 px-2.5 py-1 rounded border border-slate-700">
+                          {valText}
+                        </span>
+                      ) : (
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          item.status === 'DENIED' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-slate-800 text-slate-400'
+                        }`}>
+                          {item.status === 'DENIED' ? 'DENIED / ABSENT' : 'NOT SPECIFIED'}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-slate-500 text-xs py-2">No HPI attributes explored.</p>
+              )}
             </div>
 
             {/* Current Medications & Allergies */}
-            <div className="glass-panel p-5 rounded-2xl space-y-2">
+            <div className="glass-panel p-5 rounded-2xl space-y-3">
               <h4 className="text-xs font-bold uppercase tracking-wider text-cyan-400">Medications & Allergies</h4>
-              {activeSummary.medications?.map((item: any, i: number) => (
-                <div key={i} className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs flex justify-between">
-                  <span className="font-semibold text-slate-200">{item.name} ({item.dosage})</span>
-                  <span className="text-slate-400">{item.frequency}</span>
-                </div>
-              ))}
+              
+              {/* Medications */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Active Medications</span>
+                {activeSummary.medications && activeSummary.medications.length > 0 ? (
+                  activeSummary.medications.map((item: any, i: number) => (
+                    <div key={i} className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs flex justify-between">
+                      <span className="font-semibold text-slate-200">💊 {item.name || item.medication} {item.dosage ? `(${item.dosage})` : ''}</span>
+                      <span className="text-slate-400">{item.frequency || 'As prescribed'}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-500 text-xs">No active medications reported.</p>
+                )}
+              </div>
+
+              {/* Allergies */}
+              <div className="space-y-1.5 pt-2 border-t border-slate-800">
+                <span className="text-[10px] uppercase font-bold text-rose-400 tracking-wider">Allergies & Sensitivities</span>
+                {activeSummary.allergies && activeSummary.allergies.length > 0 ? (
+                  activeSummary.allergies.map((item: any, i: number) => (
+                    <div key={i} className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs flex justify-between">
+                      <span className="font-semibold text-rose-300">⚠️ {item.name || item.allergen}</span>
+                      <span className="text-slate-400">{item.details || item.reaction || 'Reported sensitivity'}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-500 text-xs">No known allergies reported.</p>
+                )}
+              </div>
             </div>
 
             {/* Lab Investigations */}
             <div className="glass-panel p-5 rounded-2xl space-y-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400">Investigations & Labs</h4>
-              {activeSummary.investigations?.map((item: any, i: number) => (
-                <div key={i} className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs flex justify-between items-center">
-                  <div>
-                    <span className="font-semibold text-white block">{item.test_name}</span>
-                    <span className="text-slate-400 text-[10px]">Ref: {item.reference_range}</span>
+              {activeSummary.investigations && activeSummary.investigations.length > 0 ? (
+                activeSummary.investigations.map((item: any, i: number) => (
+                  <div key={i} className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs flex justify-between items-center">
+                    <div>
+                      <span className="font-semibold text-white block">{item.test_name}</span>
+                      <span className="text-slate-400 text-[10px]">Ref: {item.reference_range}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                      item.is_abnormal ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-slate-800 text-slate-300'
+                    }`}>
+                      {item.value} {item.is_abnormal ? '⚠️ ABNORMAL' : ''}
+                    </span>
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-xs font-bold ${
-                    item.is_abnormal ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-slate-800 text-slate-300'
-                  }`}>
-                    {item.value} {item.is_abnormal ? '⚠️ ABNORMAL' : ''}
-                  </span>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-slate-500 text-xs py-2">No lab investigations recorded.</p>
+              )}
             </div>
           </div>
 

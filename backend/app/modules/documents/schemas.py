@@ -22,7 +22,8 @@ class EntityItemSchema(BaseModel):
 
 class DocumentExtractionSchema(BaseModel):
     """Structured extraction output requested from LLM/multimodal parser for Module B."""
-    document_type: str = Field(default="LAB_REPORT", description="Inferred document type (LAB_REPORT, PRESCRIPTION, DISCHARGE_SUMMARY)")
+    document_type: str = Field(default="LAB_REPORT", description="Inferred document type (LAB_REPORT, HANDWRITTEN_PRESCRIPTION, PRESCRIPTION, DISCHARGE_SUMMARY)")
+    ocr_transcription: Optional[str] = Field(None, description="Full raw text transcription of the document including handwritten prescriptions")
     entities: List[EntityItemSchema] = Field(default_factory=list, description="Extracted entities")
     summary_notes: Optional[str] = Field(None, description="High-level factual document notes without diagnostic speculation")
 

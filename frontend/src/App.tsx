@@ -6,6 +6,8 @@ import { PatientPage } from './pages/PatientPage';
 import { ConversationPage } from './pages/ConversationPage';
 import { DocumentsPage } from './pages/DocumentsPage';
 import { SummaryPage } from './pages/SummaryPage';
+import { PatientDashboardPage } from './pages/PatientDashboardPage';
+import { DoctorDashboardPage } from './pages/DoctorDashboardPage';
 import { ConsentPage } from './pages/ConsentPage';
 import { ConversationSkeleton, DocumentSkeleton, SummarySkeleton } from './components/common/Skeleton';
 
@@ -50,6 +52,8 @@ export const App: React.FC = () => {
                 </Suspense>
               }
             />
+            <Route path="history" element={<PatientDashboardPage />} />
+            <Route path="doctor" element={<DoctorDashboardPage />} />
             <Route path="consent" element={<ConsentPage />} />
           </Route>
         </Routes>

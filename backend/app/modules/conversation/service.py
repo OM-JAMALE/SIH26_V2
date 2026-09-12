@@ -23,6 +23,7 @@ from app.modules.conversation.schemas import (
 from app.modules.conversation.state_machine import InterviewStateMachine, update_clinical_history
 from app.modules.conversation.questions import (
     get_template_question,
+    generate_ai_dynamic_question,
     INITIAL_DISCLAIMER_TEXT,
     DETERMINISTIC_EMERGENCY_MESSAGE,
     NO_DIAGNOSIS_TREATMENT_ADVICE_RESPONSE,
@@ -32,11 +33,81 @@ from app.modules.conversation.extraction import get_extraction_provider
 from app.core.logging import logger
 
 
+from app.db.models.summary import Summary as SummaryModel
+
 class ClinicalConversationService:
     def __init__(self, provider_type: Optional[str] = None):
         self.state_machine = InterviewStateMachine()
         self.safety_engine = SafetyRulesEngine()
         self.extraction_provider = get_extraction_provider(provider_type)
+
+    def _fetch_patient_prior_history(
+        self, patient_id: uuid.UUID, current_session_id: uuid.UUID, db: DBSession
+    ) -> Optional[str]:
+        """Fetch and assemble prior health records, past summaries, and document extractions for this patient."""
+        if not db:
+            return None
+            
+        history_parts = []
+
+        # 1. Fetch prior sessions for this patient (excluding current session)
+        prior_sessions = (
+            db.query(SessionModel)
+            .filter(SessionModel.patient_id == patient_id, SessionModel.id != current_session_id)
+            .order_by(SessionModel.created_at.desc())
+            .limit(5)
+            .all()
+        )
+
+        for s in prior_sessions:
+            sh = s.structured_history or {}
+            pmh = sh.get("past_medical_history", []) or sh.get("medical_history", [])
+            meds = sh.get("medications", [])
+            allergies = sh.get("allergies", [])
+            psh = sh.get("past_surgical_history", [])
+            
+            # Format PMH items if they are objects or strings
+            pmh_strs = [p.get("condition", str(p)) if isinstance(p, dict) else str(p) for p in pmh]
+            med_strs = [m.get("name", str(m)) if isinstance(m, dict) else str(m) for m in meds]
+            alg_strs = [a.get("allergen", str(a)) if isinstance(a, dict) else str(a) for a in allergies]
+            psh_strs = [p.get("procedure", str(p)) if isinstance(p, dict) else str(p) for p in psh]
+
+            if pmh_strs or med_strs or alg_strs or psh_strs:
+                part = f"- Prior Session ({s.created_at.strftime('%Y-%m-%d')}):"
+                if pmh_strs:
+                    part += f"\n  Known Conditions: {', '.join(pmh_strs)}"
+                if med_strs:
+                    part += f"\n  Known Medications: {', '.join(med_strs)}"
+                if alg_strs:
+                    part += f"\n  Known Allergies: {', '.join(alg_strs)}"
+                if psh_strs:
+                    part += f"\n  Known Surgeries: {', '.join(psh_strs)}"
+                history_parts.append(part)
+
+        # 2. Fetch past summaries for this patient
+        past_summaries = (
+            db.query(SummaryModel)
+            .join(SessionModel, SummaryModel.session_id == SessionModel.id)
+            .filter(SessionModel.patient_id == patient_id, SessionModel.id != current_session_id)
+            .order_by(SummaryModel.created_at.desc())
+            .limit(3)
+            .all()
+        )
+        for summ in past_summaries:
+            summary_info = []
+            if summ.pmh:
+                summary_info.append(f"PMH: {summ.pmh}")
+            if summ.drug_and_allergy:
+                summary_info.append(f"Meds/Allergies: {summ.drug_and_allergy}")
+            if summ.chief_complaint:
+                summary_info.append(f"Past Chief Complaint: {summ.chief_complaint}")
+            if summary_info:
+                history_parts.append(f"- Past Consult Summary:\n  " + "\n  ".join(summary_info))
+
+        if not history_parts:
+            return None
+
+        return "\n".join(history_parts)
 
     def _log_audit_event(
         self,
@@ -319,13 +390,16 @@ class ClinicalConversationService:
         if next_lifecycle == SessionLifecycle.COMPLETED:
             self._log_audit_event(db, session_id, "SESSION_COMPLETED", request_id=request_id)
 
-        # 9. Get Next Template Question
-        primary_symptom = history_obj.chief_complaint[0].symptom if history_obj.chief_complaint else "symptom"
-        next_q = get_template_question(
+        # 9. Fetch Prior Patient History & Get Next Dynamic AI Question
+        prior_hist_str = self._fetch_patient_prior_history(session.patient_id, session_id, db)
+        next_q = generate_ai_dynamic_question(
+            provider=self.extraction_provider,
             state=next_state,
             socrates_attr=next_soc,
             mode=SessionMode(session.mode),
-            symptom_name=primary_symptom,
+            history=history_obj,
+            last_patient_input=raw_text,
+            patient_prior_history=prior_hist_str,
         )
 
         # Append boundary message if patient asked for diagnosis/treatment
