@@ -93,22 +93,12 @@ app = FastAPI(
 def get_cors_origins() -> list:
     """
     Get CORS allowed origins based on environment.
-    
-    Development: http://localhost:5173 (React dev server)
-    Production: Use CORS_ORIGINS environment variable
+    Allows localhost, wildcard (*), and Vercel domains for cloud deployment.
     """
-    if settings.app_env == "development":
-        origins = [
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-            "http://localhost:3000",
-            "http://localhost:8000",  # For local testing
-        ]
-        logger.info(f"CORS: Development mode - allowing {len(origins)} localhost origins")
-    else:
-        origins = settings.cors_origins
-        logger.info(f"CORS: Production mode - allowing {len(origins)} configured origins")
-    
+    origins = settings.cors_origins or []
+    # Always include wildcard and common deployment origins
+    if "*" not in origins:
+        origins.extend(["*", "http://localhost:5173", "http://127.0.0.1:5173"])
     return origins
 
 cors_origins = get_cors_origins()
